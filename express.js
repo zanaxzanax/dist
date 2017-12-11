@@ -15,7 +15,7 @@ exp.set('view engine', 'ejs');
 exp.set('views', path.resolve(__dirname, './routes/pages'));
 routes_1.default.api.init(exp);
 routes_1.default.pages.init(exp);
-exp.use(express.static(__dirname + './public'));
+exp.use(express.static(path.resolve(__dirname + './public')));
 exp.use(function (req, res, next) {
     next(new errors_1.default.RouteError());
 });
