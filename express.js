@@ -8,14 +8,15 @@ var routes_1 = require("./routes");
 var config_1 = require("./config");
 var path = require("path");
 var exp = express();
+var dirname = process.env.PWD || __dirname;
 exp.use(bodyParser.urlencoded({ extended: false }));
 exp.use(bodyParser.json());
 exp.use(cookieParser());
 exp.set('view engine', 'ejs');
-exp.set('views', path.resolve(__dirname, './routes/pages'));
+exp.set('views', path.resolve(dirname, './routes/pages'));
 routes_1.default.api.init(exp);
 routes_1.default.pages.init(exp);
-exp.use(express.static(path.resolve(__dirname + './public')));
+exp.use(express.static(dirname + '/public'));
 exp.use(function (req, res, next) {
     next(new errors_1.default.RouteError());
 });
