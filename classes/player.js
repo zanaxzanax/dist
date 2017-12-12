@@ -4,9 +4,9 @@ var enums_1 = require("./enums");
 var Player = (function () {
     function Player(game, options) {
         this.game = game;
+        this._state = enums_1.PlayerState.NOT_READY;
         this.uuid = options.uuid;
         this.name = options.name;
-        this._state = 0; // NOT_READY;
     }
     Object.defineProperty(Player.prototype, "state", {
         get: function () {

@@ -19,7 +19,6 @@ var GoodPoint = (function (_super) {
         _this.eaten = false;
         _this.x = options.x;
         _this.y = options.y;
-        _this.playerUUID = options.playerUUID;
         return _this;
     }
     GoodPoint.prototype.isEaten = function () {

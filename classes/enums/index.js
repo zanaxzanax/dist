@@ -11,16 +11,6 @@ var GameTypes;
     GameTypes[GameTypes["SINGLE"] = 0] = "SINGLE";
     GameTypes[GameTypes["MULTIPLAYER"] = 1] = "MULTIPLAYER";
 })(GameTypes = exports.GameTypes || (exports.GameTypes = {}));
-var GameEventType;
-(function (GameEventType) {
-    GameEventType[GameEventType["PIVOT"] = 0] = "PIVOT";
-    GameEventType[GameEventType["TICK"] = 1] = "TICK";
-})(GameEventType = exports.GameEventType || (exports.GameEventType = {}));
-var GameSide;
-(function (GameSide) {
-    GameSide[GameSide["LEFT"] = 0] = "LEFT";
-    GameSide[GameSide["RIGHT"] = 1] = "RIGHT";
-})(GameSide = exports.GameSide || (exports.GameSide = {}));
 var GameRule;
 (function (GameRule) {
     GameRule[GameRule["WALL_THROW"] = 0] = "WALL_THROW";

@@ -1,9 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var game_1 = require("./game");
+var enums_1 = require("./enums");
+var uuid = require("uuid");
 var App = (function () {
     function App() {
         this.games = [];
+        this.singles = [];
         this.users = [];
     }
     App.prototype.start = function (io) {
@@ -14,7 +17,8 @@ var App = (function () {
         return this.games || [];
     };
     App.prototype.getGame = function (uuid) {
-        return this.games.find(function (game) { return game.uuid === uuid; }) || null;
+        return this.games.find(function (game) { return game.uuid === uuid; }) ||
+            this.singles.find(function (game) { return game.uuid === uuid; }) || null;
     };
     App.prototype.joinGame = function (uuid, user) {
         var founded = this.getGame(uuid);
@@ -38,24 +42,37 @@ var App = (function () {
     };
     App.prototype.leaveGamesByUser = function (user) {
         var games = this.games.filter(function (game) {
-            return game.slots.find(function (player) { return player.uuid === user.uuid; });
+            return !game.isDone() && game.slots.find(function (player) { return player.uuid === user.uuid; });
         });
         games.forEach(function (game) {
-            if (!game.isDone()) {
-                game.slots = game.slots.filter(function (player) { return player.uuid !== user.uuid; });
-                game.softStop();
-            }
-            user.socket.leave(game.uuid);
+            game.slots = game.slots.filter(function (player) { return player.uuid !== user.uuid; });
+            game.slots.forEach(function (player) {
+                player.setState(enums_1.PlayerState.NOT_READY);
+            });
+            game.softStop();
         });
         if (games.length) {
             this.io.emit('games:update', games);
         }
     };
     App.prototype.addGame = function (options) {
-        var game = new game_1.default(this, options);
-        this.games.push(game);
-        this.io.emit('games:add', game);
-        return game;
+        if (options.type === enums_1.GameTypes[enums_1.GameTypes.SINGLE]) {
+            var game = {
+                name: options.name,
+                rule: parseInt(options.rule, 10),
+                speed: parseInt(options.speed, 10),
+                type: enums_1.GameTypes.SINGLE,
+                uuid: uuid()
+            };
+            this.singles.push(game);
+            return game;
+        }
+        else {
+            var game = new game_1.default(this, options);
+            this.games.push(game);
+            this.io.emit('games:add', game);
+            return game;
+        }
     };
     App.prototype.removeGame = function (uuid, user) {
         var founded = this.getGame(uuid);

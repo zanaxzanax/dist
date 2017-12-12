@@ -14,6 +14,8 @@ var Game = (function () {
         this.app = app;
         this.fieldResolutionX = config_1.default.fieldResolutionX;
         this.fieldResolutionY = config_1.default.fieldResolutionY;
+        this.uuid = uuid();
+        this.type = enums_1.GameTypes.MULTIPLAYER;
         this.playersLimit = 2;
         this.slots = [];
         this.pivots = {};
@@ -68,7 +70,7 @@ var Game = (function () {
         return this.state === enums_1.GameState.DONE;
     };
     Game.prototype.join = function (user) {
-        if (!this.isFull() && this.isCreated() && !this.getPlayerByUUID(user.uuid)) {
+        if (!this.isFull() && this.isCreated() && !this._getPlayerByUUID(user.uuid)) {
             this.slots.push(new player_1.default(this, user));
             return true;
         }
@@ -76,40 +78,66 @@ var Game = (function () {
             return false;
         }
     };
-    Game.prototype.allReady = function () {
-        return this.isFull() && this.slots.every(function (player) { return player.state === 1; });
-    };
     Game.prototype.ready = function (user) {
-        var player = this.getPlayerByUUID(user.uuid);
+        var player = this._getPlayerByUUID(user.uuid);
         if (player) {
             player.state = enums_1.PlayerState.READY; // READY;
-            if (this.allReady()) {
-                this.start();
+            if (this._allReady()) {
+                this._start();
             }
         }
     };
     Game.prototype.pivot = function (data, user) {
-        if (this.getPlayerByUUID(user.uuid) && this.isInPlay()) {
+        if (this._getPlayerByUUID(user.uuid) && this.isInPlay()) {
             this.pivots[user.uuid] = this.pivots[user.uuid] || [];
-            this.pivots[user.uuid].push(new points_1.PivotPoint(this, data));
+            this.pivots[user.uuid].push(new points_1.PivotPoint(this, {
+                x: this.snakes[user.uuid].headPoint.x,
+                y: this.snakes[user.uuid].headPoint.y,
+                direction: data.direction
+            }));
         }
     };
-    Game.prototype.getPlayerByUUID = function (uuid) {
+    Game.prototype.softStop = function () {
+        this._state = enums_1.GameState.CREATED;
+        this.endTime = Date.now();
+        this._stopMovement();
+    };
+    Game.prototype.stop = function () {
+        this.softStop();
+        this._state = enums_1.GameState.DONE;
+    };
+    Game.prototype.toJSON = function () {
+        return {
+            name: this.name,
+            playersLimit: this.playersLimit,
+            speed: this.speed,
+            slots: this.slots,
+            startTime: this.startTime,
+            now: this.now,
+            endTime: this.endTime,
+            state: this.state,
+            goods: this.goods,
+            creator: this.creator,
+            snakes: this.snakes,
+            uuid: this.uuid
+        };
+    };
+    Game.prototype._allReady = function () {
+        return this.isFull() && this.slots.every(function (player) { return player.state === 1; });
+    };
+    Game.prototype._getPlayerByUUID = function (uuid) {
         return this.slots.find(function (player) { return player.uuid === uuid; });
     };
-    Game.prototype.checkGoods = function () {
+    Game.prototype._checkGoods = function () {
         var _this = this;
         Object.keys(this.goods).forEach(function (playerUUID) {
             var good = _this.goods[playerUUID];
             if (!good || good.isEaten()) {
-                _this.goods[playerUUID] = _this.getGood(playerUUID);
+                _this.goods[playerUUID] = _this._createGood();
             }
         });
     };
-    Game.prototype.getGood = function (playerUUID) {
-        return new good_point_1.default(this, { playerUUID: playerUUID, x: this.getRandomX(), y: this.getRandomY() });
-    };
-    Game.prototype.cleanPivots = function () {
+    Game.prototype._cleanPivots = function () {
         var _this = this;
         Object.keys(this.pivots).forEach(function (playerUUID) {
             var pivots = _this.pivots[playerUUID].slice();
@@ -122,37 +150,13 @@ var Game = (function () {
             });
         });
     };
-    Game.prototype.getPlayerUUIDBySnake = function (snake) {
-        var _this = this;
-        return Object.keys(this.snakes).find(function (playerUUID) { return _this.snakes[playerUUID] === snake; });
-    };
-    Game.prototype.moveSnakes = function () {
+    Game.prototype._moveSnakes = function () {
         var _this = this;
         Object.keys(this.snakes).forEach(function (playerUUID) {
-            _this.snakes[playerUUID].move();
+            _this.snakes[playerUUID].move(_this.pivots[playerUUID], _this.goods[playerUUID]);
         });
     };
-    Game.prototype.randomInteger = function (min, max) {
-        var rand = min + Math.random() * (max + 1 - min);
-        rand = Math.floor(rand);
-        return rand;
-    };
-    Game.prototype.getRandomX = function () {
-        return this.randomInteger(0, this.maxX);
-    };
-    Game.prototype.getRandomY = function () {
-        return this.randomInteger(0, this.maxY);
-    };
-    Game.prototype.softStop = function () {
-        this._state = enums_1.GameState.CREATED;
-        this.endTime = Date.now();
-        this._stopMovement();
-    };
-    Game.prototype.stop = function () {
-        this.softStop();
-        this._state = enums_1.GameState.DONE;
-    };
-    Game.prototype.start = function () {
+    Game.prototype._start = function () {
         var _this = this;
         this.startTime = Date.now();
         this.endTime = Date.now();
@@ -165,15 +169,15 @@ var Game = (function () {
                     direction: enums_1.PivotPointType.RIGHT
                 }]);
             _this.pivots[playerUUID] = [];
-            _this.goods[slot.uuid] = _this.getGood(playerUUID);
+            _this.goods[slot.uuid] = _this._createGood();
         });
         this.state = enums_1.GameState.PLAY;
         this._startMovement();
     };
-    Game.prototype.isGameOld = function (secCount) {
+    Game.prototype._isGameOld = function (secCount) {
         return this.isInPlay() && moment.utc(this.now).diff(moment.utc(this.startTime), 'seconds') >= secCount;
     };
-    Game.prototype.checkLosers = function () {
+    Game.prototype._checkLosers = function () {
         var _this = this;
         var uuidArray = Object.keys(this.snakes).filter(function (playerUUID) {
             var snake = _this.snakes[playerUUID];
@@ -183,13 +187,13 @@ var Game = (function () {
                 snake.isSelfHit();
         });
         uuidArray.forEach(function (uuid) {
-            _this.getPlayerByUUID(uuid).setState(enums_1.PlayerState.LOSER);
+            _this._getPlayerByUUID(uuid).setState(enums_1.PlayerState.LOSER);
         });
     };
-    Game.prototype.hasLosers = function () {
+    Game.prototype._hasLosers = function () {
         return !!this.slots.find(function (player) { return player.isLoser(); });
     };
-    Game.prototype.checkWinners = function () {
+    Game.prototype._checkWinners = function () {
         var _this = this;
         var lenArray = Object.keys(this.snakes).map(function (playerUUID) { return ({
             playerUUID: playerUUID,
@@ -198,51 +202,50 @@ var Game = (function () {
         var max = _.maxBy(lenArray, function (item) { return item.len; });
         lenArray = lenArray.filter(function (num) { return num === max; });
         lenArray.forEach(function (item) {
-            _this.getPlayerByUUID(item.playerUUID).setState(enums_1.PlayerState.WINNER);
+            _this._getPlayerByUUID(item.playerUUID).setState(enums_1.PlayerState.WINNER);
         });
     };
-    Game.prototype.tick = function () {
+    Game.prototype._tick = function () {
         this.now = Date.now();
-        this.checkGoods();
-        this.moveSnakes();
-        this.cleanPivots();
-        this.checkLosers();
-        if (this.hasLosers()) {
+        this._checkGoods();
+        this._moveSnakes();
+        this._cleanPivots();
+        this._checkLosers();
+        if (this._hasLosers()) {
             this.stop();
         }
         else {
-            if (this.isGameOld(Game.gameDuration)) {
-                this.checkWinners();
+            if (this._isGameOld(Game.gameDuration)) {
+                this._checkWinners();
                 this.stop();
             }
         }
         this.sendUpdateMessage();
     };
-    Game.prototype.toJSON = function () {
-        return {
-            name: this.name,
-            playersLimit: this.playersLimit,
-            slots: this.slots,
-            startTime: this.startTime,
-            now: this.now,
-            endTime: this.endTime,
-            state: this.state,
-            goods: this.goods,
-            creator: this.creator,
-            snakes: this.snakes,
-            uuid: this.uuid
-        };
+    Game.prototype._randomInteger = function (min, max) {
+        var rand = min + Math.random() * (max + 1 - min);
+        rand = Math.floor(rand);
+        return rand;
+    };
+    Game.prototype._getRandomX = function () {
+        return this._randomInteger(0, this.maxX);
+    };
+    Game.prototype._getRandomY = function () {
+        return this._randomInteger(0, this.maxY);
     };
     Game.prototype._startMovement = function () {
         var _this = this;
         this._interval = setInterval(function () {
-            _this.tick();
+            _this._tick();
         }, (config_1.default.relativeSpeed || 1000) / this.speed);
+    };
+    Game.prototype._createGood = function () {
+        return new good_point_1.default(this, { x: this._getRandomX(), y: this._getRandomY() });
     };
     Game.prototype._stopMovement = function () {
         clearInterval(this._interval);
     };
     return Game;
 }());
-Game.gameDuration = 60;
+Game.gameDuration = config_1.default.gameDuration || 60;
 exports.default = Game;

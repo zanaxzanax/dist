@@ -9,6 +9,7 @@ var config_1 = require("./config");
 var path = require("path");
 var exp = express();
 var dirname = process.env.PWD || __dirname;
+var port = process.env.PORT || "3000";
 exp.use(bodyParser.urlencoded({ extended: false }));
 exp.use(bodyParser.json());
 exp.use(cookieParser());
@@ -50,7 +51,7 @@ exp.use(function (err, req, res, next) {
 });
 exports.default = {
     start: function () { return new Promise(function (resolve, reject) {
-        var server = exp.listen(process.env.PORT);
+        var server = exp.listen(port);
         server.on('error', reject);
         server.on('listening', function () {
             resolve(server);

@@ -6,15 +6,6 @@ var Snake = (function () {
     function Snake(game, points) {
         var _this = this;
         this.game = game;
-        /* static defaults: SnakeOptions = {
-             playerUUID: '',
-             length: 1,
-             startX: 0,
-             startY: 0,
-             direction: PivotPointType.RIGHT,
-         };
-     */
-        //    options: SnakeOptions;
         this.points = [];
         this.points = points.map(function (point) { return new body_point_1.default(_this.game, point); });
     }
@@ -62,10 +53,8 @@ var Snake = (function () {
         }
         this.points.push(new body_point_1.default(this.game, { x: x, y: y, direction: this.lastPoint.direction }));
     };
-    Snake.prototype.move = function () {
+    Snake.prototype.move = function (pivots, good) {
         var _this = this;
-        var pivots = this.game.pivots[this.game.getPlayerUUIDBySnake(this)];
-        var good = this.game.goods[this.game.getPlayerUUIDBySnake(this)];
         var direction;
         this.points.forEach(function (point) {
             var pivot = pivots.find(function (pivotPoint) {

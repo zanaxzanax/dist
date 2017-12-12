@@ -10,14 +10,12 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col">
-            <h1><%= clientName %></h1>
+            <% include parts/client-name %>
         </div>
     </div>
     <div id="app" class="row">
         <div class="col-md-6">
-            <form class="container-fluid" action="/api/game" method="post" enctype="multipart/form-data">
-                <% include parts/create-game-form-inner %>
-            </form>
+            <% include parts/create-game-form-inner %>
         </div>
         <div class="col-md-6">
             <div id="games"></div>
