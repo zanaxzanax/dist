@@ -1,0 +1,23 @@
+<html>
+<head lang="en">
+    <% include parts/head %>
+    <title><%= title %></title>
+</head>
+<body>
+
+<% include parts/connect %>
+
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <% include parts/client-name %>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <% include parts/create-game-form-inner %>
+        </div>
+    </div>
+</div>
+</body>
+</html>
